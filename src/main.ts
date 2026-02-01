@@ -1,4 +1,5 @@
 import { App, Editor, MarkdownView, Notice, Plugin } from 'obsidian';
+import { DEFAULT_SETTINGS, type CaseStudyFigmaSettings, CaseStudyFigmaSettingTab } from "./settings";
 
 interface Block {
     type: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body' | 'list';
@@ -9,7 +10,12 @@ interface Block {
 }
 
 export default class CaseStudyFigmaPlugin extends Plugin {
+
+    settings: CaseStudyFigmaSettings;
+
     async onload() {
+        await this.loadSettings();
+        this.addSettingTab(new CaseStudyFigmaSettingTab(this.app, this));
         // Add command to export current note
         this.addCommand({
             id: 'export-to-figma',
@@ -38,8 +44,17 @@ export default class CaseStudyFigmaPlugin extends Plugin {
                 new Notice(`✓ ${blocks.length} blocks ready for Figma`);
             } else {
                 new Notice('No active markdown file');
+                return;
             }
         });
+    }
+
+    async loadSettings() {
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    }
+
+    async saveSettings() {
+        await this.saveData(this.settings);
     }
 
     parseMarkdown(markdown: string): Block[] {
@@ -58,14 +73,18 @@ export default class CaseStudyFigmaPlugin extends Plugin {
             // Check for headings
             const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
             if (headingMatch) {
-                const level = headingMatch[1].length;
-                const text = headingMatch[2].trim();
+                const hashes = headingMatch[1];
+                const headingText = headingMatch[2];
+                if (!hashes || !headingText) continue;
+
+                const level = hashes.length;
+                const text = headingText.trim();
 
                 blocks.push({
-                    type: `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6',
-                    level: level,
-                    text: text,
-                    id: `h${level}-${blockId++}`
+                    type: `h${level}` as Block['type'],
+                    level,
+                    text,
+                    id: `h${level}-${blockId++}`,
                 });
                 continue;
             }
@@ -73,10 +92,13 @@ export default class CaseStudyFigmaPlugin extends Plugin {
             // Check for list items (-, *, +) - EACH ITEM SEPARATE
             const listMatch = line.match(/^[\s]*[-*+]\s+(.+)$/);
             if (listMatch) {
+                const itemText = listMatch[1];
+                if (!itemText) continue;
+
                 blocks.push({
                     type: 'list',
-                    text: listMatch[1].trim(),
-                    id: `list-${blockId++}`
+                    text: itemText.trim(),
+                    id: `list-${blockId++}`,
                 });
                 continue;
             }
