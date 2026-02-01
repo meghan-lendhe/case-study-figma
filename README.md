@@ -1,90 +1,125 @@
-# Obsidian Sample Plugin
+# Case Study → Figma (Obsidian Plugin)
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Export a case study written in Obsidian (Markdown) into structured JSON blocks, optimized to be pasted into the companion Figma plugin that generates **separate text layers** for fast case study page layout.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+- **Command:** `Case Study -> Figma: Export case study to Figma (clipboard)`
+- **Plugin ID:** `case-study-figma`
+- **Author:** Meghan Lendhe — https://meghan-lendhe.github.io/
+- **License:** MIT
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+---
 
-## First time developing plugins?
+## What it does
 
-Quick starting guide for new plugin devs:
+- Adds a command in Obsidian’s Command Palette to export the current note as JSON.
+- Converts Markdown into ordered blocks:
+  - Headings (`#` … `######`) → `h1`–`h6`
+  - Body → **each non-empty line becomes its own block**
+  - Bullets (`-`, `*`, `+`) → **each bullet becomes its own block**
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+---
 
-## Releasing new releases
+## Companion plugin (Figma)
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+This exporter is intended to be used with:
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+- **Case Study Importer (Figma Plugin):** https://github.com/meghan-lendhe/Case-Study-Importer
 
-## Adding your plugin to the community plugin list
+---
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+## Output format
+
+The plugin copies JSON like:
+
+```json
+[
+  { "type": "h1", "level": 1, "text": "Title", "id": "h1-0" },
+  { "type": "h2", "level": 2, "text": "Overview", "id": "h2-1" },
+  { "type": "body", "text": "Problem: ...", "id": "body-2" },
+  { "type": "body", "text": "Time: 14 weeks", "id": "body-3" },
+  { "type": "list", "text": "A bullet item", "id": "list-4" }
+]
+```
+
+### Block fields
+
+- `type` (required): `h1`–`h6` | `body` | `list`
+- `level` (optional): 1–6 (for headings)
+- `text` (required): string content for that line/item
+- `id` (required): identifier generated during export (useful for ordering and potential “update” flows later)
+
+---
 
 ## How to use
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+1. Open your case study note in Obsidian.
+2. Press `Ctrl + P` to open Command Palette.
+3. Run: **Case Study -> Figma: Export case study to Figma (clipboard)**
+4. Open Figma → run the Case Study Importer plugin.
+5. Paste JSON into the plugin UI and click Import.
 
-## Manually installing the plugin
+---
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+## Installation (manual)
 
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
+1. Build the plugin (see Development).
+2. Copy the built files into your vault:
 
-## Funding URL
+`<YourVault>/.obsidian/plugins/case-study-figma/`
 
-You can include funding URLs where people who use your plugin can financially support it.
+Files needed:
+- `manifest.json`
+- `main.js`
+- `styles.css` (optional)
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+This matches the common layout used by the Obsidian sample plugin template.
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+3. In Obsidian: Settings → Community plugins → enable **Case Study → Figma**.
+
+> If `.obsidian/plugins` doesn’t exist yet, create it.
+
+---
+
+## Development
+
+This project was bootstrapped from the Obsidian sample plugin template (TypeScript → compiled `main.js`).
+
+### Prerequisites
+- Node.js + npm
+- Obsidian desktop app
+
+### Install
+```bash
+npm install
 ```
 
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+### Dev build (watch)
+```bash
+npm run dev
 ```
 
-## API Documentation
+### Production build
+```bash
+npm run build
+```
 
-See https://docs.obsidian.md
+After rebuilding, reload the plugin in Obsidian (toggle it off/on) to pick up changes.
+
+---
+
+## Parsing rules (current)
+
+- Headings: `#{1,6} Heading` → a heading block (`h1`–`h6`)
+- Body: each non-empty line that isn’t a heading or list item → `body`
+- Lists: `- item` / `* item` / `+ item` → `list`
+- Empty lines are ignored
+
+---
+
+## Known limitations
+
+- Markdown styling isn’t preserved (bold/italic/links are exported as plain text).
+- Tables, callouts, embeds, and images aren’t converted.
+- IDs are generated during export; editing the note can change ordering/IDs.
+
+---
