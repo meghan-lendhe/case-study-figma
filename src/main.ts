@@ -1,99 +1,124 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import { App, Editor, MarkdownView, Notice, Plugin } from 'obsidian';
 
-// Remember to rename these classes and interfaces!
-
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
-
-	async onload() {
-		await this.loadSettings();
-
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
-	}
-
-	onunload() {
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
+interface Block {
+    type: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body' | 'list';
+    level?: number;
+    text?: string;
+    items?: string[];
+    id: string;
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
+export default class CaseStudyFigmaPlugin extends Plugin {
+    async onload() {
+        // Add command to export current note
+        this.addCommand({
+            id: 'export-to-figma',
+            name: 'Export case study to Figma (clipboard)',
+            editorCallback: (editor: Editor, view: MarkdownView) => {
+                const content = editor.getValue();
+                const blocks = this.parseMarkdown(content);
+                
+                const json = JSON.stringify(blocks, null, 2);
+                navigator.clipboard.writeText(json);
+                
+                new Notice(`✓ Copied ${blocks.length} blocks to clipboard. Paste in Figma plugin!`);
+            }
+        });
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
+        // Add ribbon icon for quick access
+        this.addRibbonIcon('upload-cloud', 'Export to Figma', () => {
+            const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+            if (activeView) {
+                const content = activeView.editor.getValue();
+                const blocks = this.parseMarkdown(content);
+                
+                const json = JSON.stringify(blocks, null, 2);
+                navigator.clipboard.writeText(json);
+                
+                new Notice(`✓ ${blocks.length} blocks ready for Figma`);
+            } else {
+                new Notice('No active markdown file');
+            }
+        });
+    }
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
+    parseMarkdown(markdown: string): Block[] {
+        const lines = markdown.split('\n');
+        const blocks: Block[] = [];
+        let blockId = 0;
+        
+        let currentBody: string[] = [];
+        let currentList: string[] = [];
+        
+        const flushBody = () => {
+            if (currentBody.length > 0) {
+                blocks.push({
+                    type: 'body',
+                    text: currentBody.join('\n').trim(),
+                    id: `body-${blockId++}`
+                });
+                currentBody = [];
+            }
+        };
+        
+        const flushList = () => {
+            if (currentList.length > 0) {
+                blocks.push({
+                    type: 'list',
+                    items: currentList,
+                    id: `list-${blockId++}`
+                });
+                currentList = [];
+            }
+        };
+        
+        for (const line of lines) {
+            const trimmed = line.trim();
+            
+            // Skip empty lines
+            if (!trimmed) {
+                continue;
+            }
+            
+            // Check for headings
+            const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+            if (headingMatch) {
+                flushBody();
+                flushList();
+                
+                const level = headingMatch[1].length;
+                const text = headingMatch[2].trim();
+                
+                blocks.push({
+                    type: `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6',
+                    level: level,
+                    text: text,
+                    id: `h${level}-${blockId++}`
+                });
+                continue;
+            }
+            
+            // Check for list items (-, *, +)
+            const listMatch = line.match(/^[\s]*[-*+]\s+(.+)$/);
+            if (listMatch) {
+                flushBody();
+                currentList.push(listMatch[1].trim());
+                continue;
+            }
+            
+            // Everything else is body text
+            flushList();
+            currentBody.push(trimmed);
+        }
+        
+        // Flush remaining content
+        flushBody();
+        flushList();
+        
+        return blocks;
+    }
+
+    onunload() {
+        // Cleanup if needed
+    }
 }

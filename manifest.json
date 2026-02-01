@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+    "id": "case-study-figma",
+    "name": "Case Study → Figma",
+    "version": "1.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "Export case studies to Figma as structured JSON blocks",
+    "author": "Meghan Lendhe",
+    "authorUrl": "https://meghan-lendhe.github.io/",
+    "isDesktopOnly": false
 }
