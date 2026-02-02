@@ -1,5 +1,13 @@
 import { App, Editor, MarkdownView, Notice, Plugin } from 'obsidian';
-import { DEFAULT_SETTINGS, type CaseStudyFigmaSettings, CaseStudyFigmaSettingTab } from "./settings";
+import { SampleSettingTab } from './settings';
+
+export interface MyPluginSettings {
+    mySetting: string;
+}
+
+export const DEFAULT_SETTINGS: MyPluginSettings = {
+    mySetting: 'default'
+}
 
 interface Block {
     type: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body' | 'list';
@@ -11,11 +19,11 @@ interface Block {
 
 export default class CaseStudyFigmaPlugin extends Plugin {
 
-    settings: CaseStudyFigmaSettings;
+    settings: MyPluginSettings;
 
     async onload() {
         await this.loadSettings();
-        this.addSettingTab(new CaseStudyFigmaSettingTab(this.app, this));
+        this.addSettingTab(new SampleSettingTab(this.app, this));
         // Add command to export current note
         this.addCommand({
             id: 'export-to-figma',
@@ -47,14 +55,6 @@ export default class CaseStudyFigmaPlugin extends Plugin {
                 return;
             }
         });
-    }
-
-    async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    }
-
-    async saveSettings() {
-        await this.saveData(this.settings);
     }
 
     parseMarkdown(markdown: string): Block[] {
@@ -114,7 +114,14 @@ export default class CaseStudyFigmaPlugin extends Plugin {
         return blocks;
     }
 
+    async loadSettings() {
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    }
 
+    async saveSettings() {
+        await this.saveData(this.settings);
+    }
+    
     onunload() {
         // Cleanup if needed
     }
