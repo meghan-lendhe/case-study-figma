@@ -27,31 +27,31 @@ export default class CaseStudyFigmaPlugin extends Plugin {
         // Add command to export current note
         this.addCommand({
             id: 'export-to-figma',
-            name: 'Export case study to figma (clipboard)',
-            editorCallback: (editor: Editor, view: MarkdownView) => {
+            name: 'Export case study to Figma (clipboard)',
+            editorCallback: async (editor: Editor, view: MarkdownView) => {
                 const content = editor.getValue();
                 const blocks = this.parseMarkdown(content);
 
                 const json = JSON.stringify(blocks, null, 2);
-                navigator.clipboard.writeText(json);
+                await navigator.clipboard.writeText(json);
 
-                new Notice(`✓ Copied ${blocks.length} blocks to clipboard. Paste in Figma plugin!`);
+                new Notice(`✓ ${blocks.length} blocks ready for Figma`);
             }
         });
 
         // Add ribbon icon for quick access
-        this.addRibbonIcon('upload-cloud', 'Export to figma', () => {
+        this.addRibbonIcon('upload-cloud', 'Export to Figma', async () => {
             const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
             if (activeView) {
                 const content = activeView.editor.getValue();
                 const blocks = this.parseMarkdown(content);
 
                 const json = JSON.stringify(blocks, null, 2);
-                navigator.clipboard.writeText(json);
+                await navigator.clipboard.writeText(json);
 
-                new Notice(`✓ ${blocks.length} blocks ready for figma`);
+                new Notice(`✓ ${blocks.length} blocks ready for Figma`);
             } else {
-                new Notice('No active markdown file');
+                new Notice("No active Markdown file.");
                 return;
             }
         });
@@ -115,8 +115,15 @@ export default class CaseStudyFigmaPlugin extends Plugin {
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const data = (await this.loadData()) as Partial<CaseStudyFigmaSettings> | null;
+
+        this.settings = Object.assign(
+            {},
+            DEFAULT_SETTINGS,
+            data ?? {}
+        );
     }
+
 
     async saveSettings() {
         await this.saveData(this.settings);

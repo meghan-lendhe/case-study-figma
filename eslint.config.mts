@@ -22,10 +22,19 @@ export default tseslint.config(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		plugins: {
+		obsidianmd,
+		},
+		rules: {
+		"obsidianmd/ui/sentence-case": "warn",
+		},
+	},
 	globalIgnores([
 		"node_modules",
 		"dist",
 		"esbuild.config.mjs",
+		"eslint.config.mts",
 		"eslint.config.js",
 		"version-bump.mjs",
 		"versions.json",
