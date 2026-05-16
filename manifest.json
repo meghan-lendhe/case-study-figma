@@ -5,6 +5,6 @@
     "minAppVersion": "0.15.0",
     "description": "Copy a Markdown note as structured JSON blocks to the clipboard.",
     "author": "Meghan Lendhe",
-    "authorUrl": "https://meghan-lendhe.github.io/",
+    "authorUrl": "https://github.com/meghan-lendhe",
     "isDesktopOnly": false
 }
